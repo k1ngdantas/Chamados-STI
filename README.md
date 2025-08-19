@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Sistema de Chamados BDA AMV
 
 Sistema completo de gerenciamento de chamados técnicos desenvolvido em Flask com interface moderna e responsiva.
@@ -282,3 +283,7 @@ Este projeto foi desenvolvido para a BDA AMV.
 ---
 
 **Desenvolvido com ❤️ para a BDA AMV** 
+=======
+# Chamados-STI
+Sistema de Chamados da Bda AMV
+>>>>>>> 5e1b07181ffa2a64b1fdc2558bcb2b1f2ae0a187
