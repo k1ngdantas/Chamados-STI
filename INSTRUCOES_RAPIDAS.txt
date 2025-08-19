@@ -1,0 +1,60 @@
+========================================
+    SISTEMA DE CHAMADOS BDA AMV
+========================================
+
+COMO INICIAR:
+1. Duplo clique em "iniciar_sistema.bat"
+2. Ou execute: python app.py
+3. Acesse: http://localhost:5000
+
+USUÁRIOS DE TESTE:
+- Administrador: admin@bda.com / admin123 (Departamento: TI)
+- Técnico: tecnico@bda.com / tecnico123 (Departamento: TI)
+- Usuário: usuario@bda.com / usuario123 (Departamento: TI)
+
+FUNCIONALIDADES POR NÍVEL:
+
+👤 USUÁRIO:
+- Criar novos chamados
+- Visualizar seus chamados
+- Adicionar comentários
+- Acompanhar status
+- Chat em tempo real com técnico quando chamado está em andamento
+
+👔 GESTOR:
+- Ver todos os chamados do departamento
+- Atribuir técnicos aos chamados (obrigatório)
+- Atualizar status dos chamados
+- Dashboard com estatísticas
+- Seção especial para chamados aguardando atribuição
+
+🔧 TÉCNICO:
+- Ver apenas chamados atribuídos a ele
+- Atualizar status dos chamados
+- Dashboard com produtividade
+- Não vê chamados não atribuídos
+- Chat em tempo real com usuários quando chamado está em andamento
+
+CATEGORIAS DE CHAMADOS:
+- Hardware, Software, Rede, Internet
+- Impressora, Email, Sistema, Outros
+
+PRIORIDADES:
+- Baixa (Verde), Média (Amarelo)
+- Alta (Vermelho), Crítica (Preto)
+
+STATUS:
+- Aberto, Em Andamento, Resolvido, Fechado
+
+💬 CHAT EM TEMPO REAL:
+- Disponível quando chamado está "Em Andamento"
+- Comunicação direta entre usuário e técnico
+- Painel lateral estilo Facebook/Messenger
+- Abre na mesma página do chamado
+- Atualização automática a cada 3 segundos
+- Indicadores de leitura e status online
+- Fechar com ESC ou clicando fora
+
+========================================
+Sistema desenvolvido para BDA AMV
+======================================== 

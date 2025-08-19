@@ -1,0 +1,421 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Gestor{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1><i class="fas fa-user-tie me-2"></i>Dashboard do Gestor</h1>
+            <div>
+                <span class="badge bg-info fs-6">Departamento: {{ usuario.departamento }}</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Cards de Estatísticas -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title" id="total-chamados">0</h4>
+                        <p class="card-text">Total de Chamados</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-ticket-alt fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title" id="chamados-abertos">0</h4>
+                        <p class="card-text">Em Aberto</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-clock fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title" id="chamados-andamento">0</h4>
+                        <p class="card-text">Em Andamento</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-tools fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title" id="chamados-resolvidos">0</h4>
+                        <p class="card-text">Resolvidos</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-check-circle fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Gráficos -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-chart-pie me-2"></i>Status dos Chamados
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="statusChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-chart-bar me-2"></i>Chamados por Prioridade
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="prioridadeChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Técnicos Disponíveis -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-users me-2"></i>Técnicos Disponíveis
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for tecnico in tecnicos %}
+                    <div class="col-md-4 mb-3">
+                        <div class="card border-primary">
+                            <div class="card-body text-center">
+                                <i class="fas fa-user-cog fa-2x text-primary mb-2"></i>
+                                <h6 class="card-title">{{ tecnico.nome }}</h6>
+                                <p class="card-text text-muted">{{ tecnico.departamento }}</p>
+                                <small class="text-muted">{{ tecnico.email }}</small>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Chamados Aguardando Atribuição -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-warning">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Chamados Aguardando Atribuição
+                    <span class="badge bg-danger ms-2" id="contador-aguardando">0</span>
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if chamados_sem_tecnico %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Título</th>
+                                <th>Solicitante</th>
+                                <th>Categoria</th>
+                                <th>Prioridade</th>
+                                <th>Data Abertura</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for chamado in chamados_sem_tecnico %}
+                            <tr class="table-warning">
+                                <td>{{ chamado.id }}</td>
+                                <td><strong>{{ chamado.titulo }}</strong></td>
+                                <td>
+                                    {% set solicitante = chamado.solicitante %}
+                                    <small>{{ solicitante.nome }}</small><br>
+                                    <small class="text-muted">{{ solicitante.email }}</small>
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary">{{ chamado.categoria }}</span>
+                                </td>
+                                <td>
+                                    {% if chamado.prioridade == 'baixa' %}
+                                        <span class="badge bg-success">Baixa</span>
+                                    {% elif chamado.prioridade == 'media' %}
+                                        <span class="badge bg-warning">Média</span>
+                                    {% elif chamado.prioridade == 'alta' %}
+                                        <span class="badge bg-danger">Alta</span>
+                                    {% elif chamado.prioridade == 'critica' %}
+                                        <span class="badge bg-dark priority-critical">Crítica</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ chamado.data_abertura.strftime('%d/%m/%Y %H:%M') }}</td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a href="{{ url_for('visualizar_chamado', chamado_id=chamado.id) }}" 
+                                           class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <button type="button" class="btn btn-sm btn-warning" 
+                                                data-bs-toggle="modal" data-bs-target="#atribuirModal{{ chamado.id }}">
+                                            <i class="fas fa-user-plus"></i>
+                                        </button>
+                                    </div>
+                                    
+                                    <!-- Modal para atribuir técnico -->
+                                    <div class="modal fade" id="atribuirModal{{ chamado.id }}" tabindex="-1">
+                                        <div class="modal-dialog">
+                                            <div class="modal-content">
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title">Atribuir Técnico - Chamado #{{ chamado.id }}</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                </div>
+                                                <form method="POST" action="{{ url_for('atribuir_tecnico', chamado_id=chamado.id) }}">
+                                                    <div class="modal-body">
+                                                        <p><strong>{{ chamado.titulo }}</strong></p>
+                                                        <p class="text-muted">{{ chamado.descricao[:100] }}...</p>
+                                                        <div class="mb-3">
+                                                            <label for="tecnico_id_{{ chamado.id }}" class="form-label">Selecione o Técnico:</label>
+                                                            <select class="form-select" id="tecnico_id_{{ chamado.id }}" name="tecnico_id" required>
+                                                                <option value="">Escolha um técnico...</option>
+                                                                {% for tecnico in tecnicos %}
+                                                                <option value="{{ tecnico.id }}">{{ tecnico.nome }} ({{ tecnico.departamento }})</option>
+                                                                {% endfor %}
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                                        <button type="submit" class="btn btn-warning">
+                                                            <i class="fas fa-user-plus me-2"></i>Atribuir Técnico
+                                                        </button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+                    <h5 class="text-success">Nenhum chamado aguardando atribuição!</h5>
+                    <p class="text-muted">Todos os chamados já foram atribuídos aos técnicos.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Lista de Chamados -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-list me-2"></i>Todos os Chamados do Departamento
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if chamados %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Título</th>
+                                <th>Solicitante</th>
+                                <th>Categoria</th>
+                                <th>Prioridade</th>
+                                <th>Status</th>
+                                <th>Técnico</th>
+                                <th>Data Abertura</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for chamado in chamados %}
+                            <tr {% if not chamado.tecnico %}class="table-warning"{% endif %}>
+                                <td>{{ chamado.id }}</td>
+                                <td>{{ chamado.titulo }}</td>
+                                <td>
+                                    {% set solicitante = chamado.solicitante %}
+                                    <small>{{ solicitante.nome }}</small><br>
+                                    <small class="text-muted">{{ solicitante.email }}</small>
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary">{{ chamado.categoria }}</span>
+                                </td>
+                                <td>
+                                    {% if chamado.prioridade == 'baixa' %}
+                                        <span class="badge bg-success">Baixa</span>
+                                    {% elif chamado.prioridade == 'media' %}
+                                        <span class="badge bg-warning">Média</span>
+                                    {% elif chamado.prioridade == 'alta' %}
+                                        <span class="badge bg-danger">Alta</span>
+                                    {% elif chamado.prioridade == 'critica' %}
+                                        <span class="badge bg-dark">Crítica</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if chamado.status == 'aberto' %}
+                                        <span class="badge bg-warning">Aberto</span>
+                                    {% elif chamado.status == 'em_andamento' %}
+                                        <span class="badge bg-info">Em Andamento</span>
+                                    {% elif chamado.status == 'resolvido' %}
+                                        <span class="badge bg-success">Resolvido</span>
+                                    {% elif chamado.status == 'fechado' %}
+                                        <span class="badge bg-secondary">Fechado</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if chamado.tecnico %}
+                                        <small>{{ chamado.tecnico.nome }}</small>
+                                    {% else %}
+                                        <span class="badge bg-light text-dark">Não atribuído</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ chamado.data_abertura.strftime('%d/%m/%Y %H:%M') }}</td>
+                                <td>
+                                    <a href="{{ url_for('visualizar_chamado', chamado_id=chamado.id) }}" 
+                                       class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">Nenhum chamado encontrado</h5>
+                    <p class="text-muted">Não há chamados no departamento {{ usuario.departamento }}.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Carregar estatísticas
+    fetch('/api/estatisticas')
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('total-chamados').textContent = data.total;
+            document.getElementById('chamados-abertos').textContent = data.aberto;
+            document.getElementById('chamados-andamento').textContent = data.em_andamento;
+            document.getElementById('chamados-resolvidos').textContent = data.resolvido;
+            
+            // Gráfico de Status
+            const ctxStatus = document.getElementById('statusChart').getContext('2d');
+            new Chart(ctxStatus, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Aberto', 'Em Andamento', 'Resolvido'],
+                    datasets: [{
+                        data: [data.aberto, data.em_andamento, data.resolvido],
+                        backgroundColor: [
+                            '#ffc107',
+                            '#17a2b8',
+                            '#28a745'
+                        ],
+                        borderWidth: 2,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+            
+            // Gráfico de Prioridade (dados simulados)
+            const ctxPrioridade = document.getElementById('prioridadeChart').getContext('2d');
+            new Chart(ctxPrioridade, {
+                type: 'bar',
+                data: {
+                    labels: ['Baixa', 'Média', 'Alta', 'Crítica'],
+                    datasets: [{
+                        label: 'Quantidade',
+                        data: [5, 8, 3, 1],
+                        backgroundColor: [
+                            '#28a745',
+                            '#ffc107',
+                            '#dc3545',
+                            '#343a40'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+            
+            // Atualizar contador de chamados aguardando atribuição
+            const chamadosSemTecnico = document.querySelectorAll('tr.table-warning').length;
+            const contadorElement = document.getElementById('contador-aguardando');
+            if (contadorElement) {
+                contadorElement.textContent = chamadosSemTecnico;
+            }
+        });
+});
+</script>
+{% endblock %} 

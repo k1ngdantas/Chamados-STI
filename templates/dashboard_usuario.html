@@ -1,0 +1,229 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Usuário{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1><i class="fas fa-user me-2"></i>Dashboard do Usuário</h1>
+            <a href="{{ url_for('novo_chamado') }}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>Novo Chamado
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Cards de Estatísticas -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title" id="total-chamados">0</h4>
+                        <p class="card-text">Total de Chamados</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-ticket-alt fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title" id="chamados-abertos">0</h4>
+                        <p class="card-text">Em Aberto</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-clock fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title" id="chamados-andamento">0</h4>
+                        <p class="card-text">Em Andamento</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-tools fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title" id="chamados-resolvidos">0</h4>
+                        <p class="card-text">Resolvidos</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-check-circle fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Gráfico -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-chart-pie me-2"></i>Status dos Chamados
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="statusChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Lista de Chamados -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-list me-2"></i>Meus Chamados
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if chamados %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Título</th>
+                                <th>Categoria</th>
+                                <th>Prioridade</th>
+                                <th>Status</th>
+                                <th>Data Abertura</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for chamado in chamados %}
+                            <tr>
+                                <td>{{ chamado.id }}</td>
+                                <td>{{ chamado.titulo }}</td>
+                                <td>
+                                    <span class="badge bg-secondary">{{ chamado.categoria }}</span>
+                                </td>
+                                <td>
+                                    {% if chamado.prioridade == 'baixa' %}
+                                        <span class="badge bg-success">Baixa</span>
+                                    {% elif chamado.prioridade == 'media' %}
+                                        <span class="badge bg-warning">Média</span>
+                                    {% elif chamado.prioridade == 'alta' %}
+                                        <span class="badge bg-danger">Alta</span>
+                                    {% elif chamado.prioridade == 'critica' %}
+                                        <span class="badge bg-dark">Crítica</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if chamado.status == 'aberto' %}
+                                        <span class="badge bg-warning">Aberto</span>
+                                    {% elif chamado.status == 'em_andamento' %}
+                                        <span class="badge bg-info">Em Andamento</span>
+                                    {% elif chamado.status == 'resolvido' %}
+                                        <span class="badge bg-success">Resolvido</span>
+                                    {% elif chamado.status == 'fechado' %}
+                                        <span class="badge bg-secondary">Fechado</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ chamado.data_abertura.strftime('%d/%m/%Y %H:%M') }}</td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a href="{{ url_for('visualizar_chamado', chamado_id=chamado.id) }}" 
+                                           class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                                            {% if chamado.status == 'em_andamento' %}
+                    <a href="{{ url_for('chat', chamado_id=chamado.id) }}" 
+                       class="btn btn-sm btn-success">
+                        <i class="fas fa-comments"></i>
+                    </a>
+                    {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">Nenhum chamado encontrado</h5>
+                    <p class="text-muted">Você ainda não criou nenhum chamado.</p>
+                    <a href="{{ url_for('novo_chamado') }}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>Criar Primeiro Chamado
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Carregar estatísticas
+    fetch('/api/estatisticas')
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('total-chamados').textContent = data.total;
+            document.getElementById('chamados-abertos').textContent = data.aberto;
+            document.getElementById('chamados-andamento').textContent = data.em_andamento;
+            document.getElementById('chamados-resolvidos').textContent = data.resolvido;
+            
+            // Criar gráfico
+            const ctx = document.getElementById('statusChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Aberto', 'Em Andamento', 'Resolvido'],
+                    datasets: [{
+                        data: [data.aberto, data.em_andamento, data.resolvido],
+                        backgroundColor: [
+                            '#ffc107',
+                            '#17a2b8',
+                            '#28a745'
+                        ],
+                        borderWidth: 2,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        });
+});
+</script>
+{% endblock %} 

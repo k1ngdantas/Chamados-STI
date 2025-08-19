@@ -1,0 +1,257 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Técnico{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1><i class="fas fa-user-cog me-2"></i>Dashboard do Técnico</h1>
+            <div>
+                <span class="badge bg-info fs-6">Departamento: {{ usuario.departamento }}</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Cards de Estatísticas -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title" id="total-chamados">0</h4>
+                        <p class="card-text">Meus Chamados</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-ticket-alt fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title" id="chamados-abertos">0</h4>
+                        <p class="card-text">Em Aberto</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-clock fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title" id="chamados-andamento">0</h4>
+                        <p class="card-text">Em Andamento</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-tools fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title" id="chamados-resolvidos">0</h4>
+                        <p class="card-text">Resolvidos</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-check-circle fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Informação sobre Atribuição -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="alert alert-info">
+            <h6 class="alert-heading">
+                <i class="fas fa-info-circle me-2"></i>Como Funciona o Sistema
+            </h6>
+            <p class="mb-0">
+                Os chamados são criados pelos usuários e atribuídos aos técnicos pelos gestores. 
+                Você só verá os chamados que foram especificamente atribuídos a você.
+            </p>
+        </div>
+    </div>
+</div>
+
+<!-- Gráfico de Produtividade -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-chart-line me-2"></i>Minha Produtividade
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="produtividadeChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Meus Chamados Atribuídos -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-list me-2"></i>Meus Chamados Atribuídos
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if chamados %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Título</th>
+                                <th>Solicitante</th>
+                                <th>Categoria</th>
+                                <th>Prioridade</th>
+                                <th>Status</th>
+                                <th>Data Abertura</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for chamado in chamados %}
+                            <tr>
+                                <td>{{ chamado.id }}</td>
+                                <td>{{ chamado.titulo }}</td>
+                                <td>
+                                    {% set solicitante = chamado.solicitante %}
+                                    <small>{{ solicitante.nome }}</small><br>
+                                    <small class="text-muted">{{ solicitante.email }}</small>
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary">{{ chamado.categoria }}</span>
+                                </td>
+                                <td>
+                                    {% if chamado.prioridade == 'baixa' %}
+                                        <span class="badge bg-success">Baixa</span>
+                                    {% elif chamado.prioridade == 'media' %}
+                                        <span class="badge bg-warning">Média</span>
+                                    {% elif chamado.prioridade == 'alta' %}
+                                        <span class="badge bg-danger">Alta</span>
+                                    {% elif chamado.prioridade == 'critica' %}
+                                        <span class="badge bg-dark">Crítica</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if chamado.status == 'aberto' %}
+                                        <span class="badge bg-warning">Aberto</span>
+                                    {% elif chamado.status == 'em_andamento' %}
+                                        <span class="badge bg-info">Em Andamento</span>
+                                    {% elif chamado.status == 'resolvido' %}
+                                        <span class="badge bg-success">Resolvido</span>
+                                    {% elif chamado.status == 'fechado' %}
+                                        <span class="badge bg-secondary">Fechado</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ chamado.data_abertura.strftime('%d/%m/%Y %H:%M') }}</td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a href="{{ url_for('visualizar_chamado', chamado_id=chamado.id) }}" 
+                                           class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                                            {% if chamado.status == 'em_andamento' %}
+                    <a href="{{ url_for('chat', chamado_id=chamado.id) }}" 
+                       class="btn btn-sm btn-success">
+                        <i class="fas fa-comments"></i>
+                    </a>
+                    {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">Nenhum chamado atribuído</h5>
+                    <p class="text-muted">Você ainda não tem chamados atribuídos.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Carregar estatísticas
+    fetch('/api/estatisticas')
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('total-chamados').textContent = data.total;
+            document.getElementById('chamados-abertos').textContent = data.aberto;
+            document.getElementById('chamados-andamento').textContent = data.em_andamento;
+            document.getElementById('chamados-resolvidos').textContent = data.resolvido;
+            
+            // Gráfico de Produtividade (dados simulados)
+            const ctx = document.getElementById('produtividadeChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'],
+                    datasets: [{
+                        label: 'Chamados Resolvidos',
+                        data: [3, 5, 2, 7, 4],
+                        borderColor: '#28a745',
+                        backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }, {
+                        label: 'Chamados em Andamento',
+                        data: [2, 3, 1, 4, 2],
+                        borderColor: '#17a2b8',
+                        backgroundColor: 'rgba(23, 162, 184, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top'
+                        }
+                    }
+                }
+            });
+        });
+});
+</script>
+{% endblock %} 

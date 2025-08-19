@@ -1,0 +1,580 @@
+{% extends "base.html" %}
+
+{% block title %}Chat - Chamado #{{ chamado.id }}{% endblock %}
+
+{% block styles %}
+<style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html, body {
+    height: 100%;
+    overflow: hidden;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    background: #0b141a;
+}
+
+.chat-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    background: #0b141a;
+    height: 100vh;
+    width: 100vw;
+}
+
+/* Header do WhatsApp */
+.chat-header {
+    background: #202c33;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid #374045;
+    min-height: 64px;
+    flex-shrink: 0;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.contact-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #25d366, #128c7e);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    font-size: 18px;
+}
+
+.contact-info h5 {
+    color: #e9edef;
+    font-size: 16px;
+    font-weight: 500;
+    margin: 0;
+}
+
+.contact-info small {
+    color: #8696a0;
+    font-size: 13px;
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.header-icon {
+    color: #aebac1;
+    font-size: 18px;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 50%;
+    transition: background-color 0.2s;
+}
+
+.header-icon:hover {
+    background: #374045;
+}
+
+/* Área de mensagens */
+.chat-messages {
+    flex: 1;
+    padding: 16px 0;
+    overflow-y: auto;
+    background: #0b141a;
+    background-image: 
+        radial-gradient(circle at 25% 25%, rgba(255,255,255,0.02) 0%, transparent 50%),
+        radial-gradient(circle at 75% 75%, rgba(255,255,255,0.02) 0%, transparent 50%);
+    background-size: 100px 100px;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Estilo das mensagens */
+.message {
+    margin-bottom: 8px;
+    display: flex;
+    width: 100%;
+    padding: 0 16px;
+}
+
+.message.sent {
+    justify-content: flex-end;
+}
+
+.message.received {
+    justify-content: flex-start;
+}
+
+.message-bubble {
+    max-width: 65%;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 14px;
+    line-height: 19px;
+    position: relative;
+    word-wrap: break-word;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+}
+
+.message.sent .message-bubble {
+    background: #005c4b;
+    color: #e9edef;
+    border-bottom-right-radius: 4px;
+}
+
+.message.received .message-bubble {
+    background: #202c33;
+    color: #e9edef;
+    border-bottom-left-radius: 4px;
+}
+
+/* Informações da mensagem */
+.message-info {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 4px;
+    font-size: 11px;
+    color: #8696a0;
+    position: absolute;
+    bottom: -20px;
+}
+
+.message.sent .message-info {
+    right: 0;
+}
+
+.message.received .message-info {
+    left: 0;
+}
+
+.message-time {
+    color: #8696a0;
+}
+
+.message-status {
+    display: flex;
+    align-items: center;
+}
+
+.status-check {
+    font-size: 10px;
+    margin-left: 2px;
+}
+
+.status-check.single {
+    color: #8696a0;
+}
+
+.status-check.double {
+    color: #53bdeb;
+}
+
+.status-check.read {
+    color: #53bdeb;
+}
+
+/* Área de input */
+.chat-input-area {
+    background: #202c33;
+    padding: 12px 16px;
+    border-top: 1px solid #374045;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 68px;
+    flex-shrink: 0;
+}
+
+.input-group {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    background: #2a3942;
+    border-radius: 8px;
+    padding: 9px 12px;
+    gap: 8px;
+}
+
+.attach-button {
+    color: #8696a0;
+    font-size: 24px;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 50%;
+    transition: background-color 0.2s;
+}
+
+.attach-button:hover {
+    background: #374045;
+}
+
+.message-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: #e9edef;
+    font-size: 15px;
+    outline: none;
+    resize: none;
+    max-height: 100px;
+    min-height: 20px;
+    line-height: 20px;
+}
+
+.message-input::placeholder {
+    color: #8696a0;
+}
+
+.send-button {
+    background: #005c4b;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.send-button:hover {
+    background: #0d7a6b;
+}
+
+.send-button:disabled {
+    background: #374045;
+    cursor: not-allowed;
+}
+
+/* Loading */
+.loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    color: #8696a0;
+}
+
+.spinner {
+    margin-bottom: 10px;
+    font-size: 24px;
+}
+
+/* Scrollbar personalizada */
+.chat-messages::-webkit-scrollbar {
+    width: 6px;
+}
+
+.chat-messages::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.chat-messages::-webkit-scrollbar-thumb {
+    background: #374045;
+    border-radius: 3px;
+}
+
+.chat-messages::-webkit-scrollbar-thumb:hover {
+    background: #4a5a63;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+    .message-bubble {
+        max-width: 85%;
+    }
+    
+    .chat-header {
+        padding: 8px 12px;
+    }
+    
+    .chat-input-area {
+        padding: 8px 12px;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="chat-container">
+    <!-- Header do WhatsApp -->
+    <div class="chat-header">
+        <div class="header-left">
+            <div class="contact-avatar">
+                <i class="fas fa-ticket-alt"></i>
+            </div>
+            <div class="contact-info">
+                <h5>Chamado #{{ chamado.id }}</h5>
+                <small>{{ chamado.titulo }}</small>
+            </div>
+        </div>
+        <div class="header-right">
+            <div class="header-icon">
+                <i class="fas fa-search"></i>
+            </div>
+            <div class="header-icon">
+                <i class="fas fa-phone"></i>
+            </div>
+            <div class="header-icon">
+                <i class="fas fa-video"></i>
+            </div>
+            <div class="header-icon">
+                <i class="fas fa-ellipsis-v"></i>
+            </div>
+            <a href="{{ url_for('visualizar_chamado', chamado_id=chamado.id) }}" class="header-icon">
+                <i class="fas fa-times"></i>
+            </a>
+        </div>
+    </div>
+
+    <!-- Área de Mensagens -->
+    <div class="chat-messages" id="chat-messages">
+        <div class="loading" id="loading-messages">
+            <div class="spinner">
+                <i class="fas fa-spinner fa-spin"></i>
+            </div>
+            <p>Carregando mensagens...</p>
+        </div>
+    </div>
+
+    <!-- Área de Input -->
+    <div class="chat-input-area">
+        <div class="input-group">
+            <div class="attach-button">
+                <i class="fas fa-plus"></i>
+            </div>
+            <textarea 
+                id="message-input" 
+                class="message-input" 
+                placeholder="Digite uma mensagem" 
+                maxlength="4096" 
+                autocomplete="off"
+                rows="1"
+            ></textarea>
+        </div>
+        <button type="button" id="send-button" onclick="sendMessage()">
+            <i class="fas fa-paper-plane"></i>
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let lastMessageId = 0;
+
+// Função para carregar mensagens
+function loadMessages() {
+    fetch(`/api/chat/{{ chamado.id }}/mensagens`)
+        .then(response => response.json())
+        .then(messages => {
+            const chatMessages = document.getElementById('chat-messages');
+            chatMessages.innerHTML = '';
+            
+            messages.forEach(message => {
+                addMessageToChat(message);
+                if (message.id > lastMessageId) {
+                    lastMessageId = message.id;
+                }
+            });
+            
+            scrollToBottom();
+        })
+        .catch(error => {
+            console.error('Erro ao carregar mensagens:', error);
+            document.getElementById('chat-messages').innerHTML = `
+                <div class="loading">
+                    <div class="spinner">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <p>Erro ao carregar mensagens</p>
+                </div>
+            `;
+        });
+}
+
+// Função para adicionar mensagem ao chat
+function addMessageToChat(message) {
+    const chatMessages = document.getElementById('chat-messages');
+    const currentUserId = {{ usuario.id }};
+    const messageUserId = parseInt(message.usuario_id);
+    const isOwnMessage = messageUserId === currentUserId;
+    
+    console.log('Current User ID:', currentUserId);
+    console.log('Message User ID:', messageUserId);
+    console.log('Is Own Message:', isOwnMessage);
+    
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `message ${isOwnMessage ? 'sent' : 'received'}`;
+    
+    const bubble = document.createElement('div');
+    bubble.className = 'message-bubble';
+    bubble.textContent = message.texto;
+    
+    const info = document.createElement('div');
+    info.className = 'message-info';
+    
+    const time = document.createElement('span');
+    time.className = 'message-time';
+    time.textContent = message.data_envio;
+    
+    const status = document.createElement('div');
+    status.className = 'message-status';
+    
+    const check = document.createElement('span');
+    check.className = `status-check ${message.lida ? 'read' : 'double'}`;
+    check.innerHTML = `<i class="fas fa-check${message.lida ? '-double' : ''}"></i>`;
+    
+    status.appendChild(check);
+    info.appendChild(time);
+    info.appendChild(status);
+    
+    messageDiv.appendChild(bubble);
+    messageDiv.appendChild(info);
+    chatMessages.appendChild(messageDiv);
+}
+
+// Função para enviar mensagem
+function sendMessage() {
+    const input = document.getElementById('message-input');
+    const text = input.value.trim();
+    
+    if (!text) return;
+    
+    // Limpar input imediatamente
+    input.value = '';
+    adjustTextareaHeight();
+    
+    fetch(`/api/chat/{{ chamado.id }}/enviar`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ texto: text })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert('Erro ao enviar mensagem: ' + data.error);
+            return;
+        }
+        // Não adicionar a mensagem aqui, deixar o checkNewMessages fazer isso
+    })
+    .catch(error => {
+        console.error('Erro ao enviar mensagem:', error);
+        alert('Erro ao enviar mensagem');
+    });
+}
+
+// Função para ajustar altura do textarea
+function adjustTextareaHeight() {
+    const textarea = document.getElementById('message-input');
+    textarea.style.height = 'auto';
+    textarea.style.height = Math.min(textarea.scrollHeight, 100) + 'px';
+}
+
+// Função para rolar para baixo
+function scrollToBottom() {
+    const chatMessages = document.getElementById('chat-messages');
+    chatMessages.scrollTo({
+        top: chatMessages.scrollHeight,
+        behavior: 'smooth'
+    });
+}
+
+// Função para verificar novas mensagens
+function checkNewMessages() {
+    fetch(`/api/chat/{{ chamado.id }}/mensagens`)
+        .then(response => response.json())
+        .then(messages => {
+            const newMessages = messages.filter(m => m.id > lastMessageId);
+            
+            if (newMessages.length > 0) {
+                let shouldScroll = false;
+                
+                newMessages.forEach(message => {
+                    addMessageToChat(message);
+                    lastMessageId = message.id;
+                    
+                    // Se a mensagem é do usuário atual, sempre fazer scroll
+                    if (parseInt(message.usuario_id) === {{ usuario.id }}) {
+                        shouldScroll = true;
+                    }
+                });
+                
+                // Scroll suave para baixo se for mensagem do usuário ou se estiver próximo do final
+                const chatMessages = document.getElementById('chat-messages');
+                const isNearBottom = chatMessages.scrollHeight - chatMessages.scrollTop - chatMessages.clientHeight < 100;
+                
+                if (shouldScroll || isNearBottom) {
+                    scrollToBottom();
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Erro ao verificar novas mensagens:', error);
+        });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Carregar mensagens iniciais
+    loadMessages();
+    
+    // Event listeners
+    const messageInput = document.getElementById('message-input');
+    const sendButton = document.getElementById('send-button');
+    
+    // Enviar com Enter
+    messageInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage();
+        }
+    });
+    
+    // Ajustar altura do textarea
+    messageInput.addEventListener('input', adjustTextareaHeight);
+    
+    // Enviar com botão
+    sendButton.addEventListener('click', sendMessage);
+    
+    // Verificar novas mensagens a cada 3 segundos
+    setInterval(checkNewMessages, 3000);
+    
+    // Focar no input
+    messageInput.focus();
+});
+
+// Atalhos de teclado
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        window.location.href = "{{ url_for('visualizar_chamado', chamado_id=chamado.id) }}";
+    }
+});
+</script>
+{% endblock %} 

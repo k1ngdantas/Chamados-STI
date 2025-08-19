@@ -1,0 +1,705 @@
+{% extends "base.html" %}
+
+{% block title %}Chamado #{{ chamado.id }}{% endblock %}
+
+{% block scripts %}
+<script>
+let lastMessageId = 0;
+let isTyping = false;
+let typingTimeout;
+
+// Função para abrir o chat
+function openChat() {
+    document.getElementById('chat-sidebar').classList.add('open');
+    document.getElementById('chat-overlay').classList.add('show');
+    document.body.classList.add('chat-open');
+    document.querySelector('.main-content').classList.add('chat-open');
+    document.querySelector('.sidebar-content').classList.add('chat-open');
+    loadMessages();
+}
+
+// Função para fechar o chat
+function closeChat() {
+    document.getElementById('chat-sidebar').classList.remove('open');
+    document.getElementById('chat-overlay').classList.remove('show');
+    document.body.classList.remove('chat-open');
+    document.querySelector('.main-content').classList.remove('chat-open');
+    document.querySelector('.sidebar-content').classList.remove('chat-open');
+}
+
+// Função para carregar mensagens
+function loadMessages() {
+    fetch(`/api/chat/{{ chamado.id }}/mensagens`)
+        .then(response => response.json())
+        .then(messages => {
+            const chatMessages = document.getElementById('chat-messages');
+            chatMessages.innerHTML = '';
+            
+            if (messages.length === 0) {
+                chatMessages.innerHTML = `
+                    <div class="text-center py-4">
+                        <i class="fas fa-comments fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">Nenhuma mensagem ainda</h5>
+                        <p class="text-muted">Seja o primeiro a enviar uma mensagem!</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            messages.forEach(message => {
+                addMessageToChat(message);
+                if (message.id > lastMessageId) {
+                    lastMessageId = message.id;
+                }
+            });
+            
+            scrollToBottom();
+        })
+        .catch(error => {
+            console.error('Erro ao carregar mensagens:', error);
+            document.getElementById('chat-messages').innerHTML = `
+                <div class="text-center py-4">
+                    <i class="fas fa-exclamation-triangle fa-2x text-danger mb-3"></i>
+                    <p class="text-danger">Erro ao carregar mensagens</p>
+                </div>
+            `;
+        });
+}
+
+// Função para adicionar mensagem ao chat
+function addMessageToChat(message) {
+    const chatMessages = document.getElementById('chat-messages');
+    const currentUserId = {{ usuario.id }};
+    const isOwnMessage = parseInt(message.usuario_id) === currentUserId;
+    
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `message ${isOwnMessage ? 'sent' : 'received'}`;
+    
+    const avatar = document.createElement('div');
+    avatar.className = 'user-avatar';
+    avatar.textContent = message.usuario_nome.charAt(0).toUpperCase();
+    
+    const bubble = document.createElement('div');
+    bubble.className = 'message-bubble';
+    bubble.textContent = message.texto;
+    
+    const info = document.createElement('div');
+    info.className = 'message-info';
+    info.innerHTML = `
+        <strong>${message.usuario_nome}</strong> 
+        <span class="message-time">${message.data_envio}</span>
+        ${message.lida ? '<i class="fas fa-check-double text-primary"></i>' : '<i class="fas fa-check"></i>'}
+    `;
+    
+    if (isOwnMessage) {
+        messageDiv.appendChild(bubble);
+        messageDiv.appendChild(avatar);
+    } else {
+        messageDiv.appendChild(avatar);
+        messageDiv.appendChild(bubble);
+    }
+    
+    messageDiv.appendChild(info);
+    chatMessages.appendChild(messageDiv);
+}
+
+// Função para enviar mensagem
+function sendMessage(text) {
+    if (!text.trim()) return;
+    
+    fetch(`/api/chat/{{ chamado.id }}/enviar`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ texto: text })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert('Erro ao enviar mensagem: ' + data.error);
+            return;
+        }
+        
+        addMessageToChat(data);
+        scrollToBottom();
+        document.getElementById('message-input').value = '';
+    })
+    .catch(error => {
+        console.error('Erro ao enviar mensagem:', error);
+        alert('Erro ao enviar mensagem');
+    });
+}
+
+// Função para rolar para baixo
+function scrollToBottom() {
+    const chatMessages = document.getElementById('chat-messages');
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+// Função para verificar novas mensagens
+function checkNewMessages() {
+    fetch(`/api/chat/{{ chamado.id }}/mensagens`)
+        .then(response => response.json())
+        .then(messages => {
+            const newMessages = messages.filter(m => m.id > lastMessageId);
+            
+            newMessages.forEach(message => {
+                addMessageToChat(message);
+                lastMessageId = message.id;
+            });
+            
+            if (newMessages.length > 0) {
+                scrollToBottom();
+            }
+        })
+        .catch(error => {
+            console.error('Erro ao verificar novas mensagens:', error);
+        });
+}
+
+// Event listeners
+document.addEventListener('DOMContentLoaded', function() {
+    // Calcular tempo que o chamado está aberto
+    const dataAbertura = new Date('{{ chamado.data_abertura.isoformat() }}');
+    const agora = new Date();
+    const diff = agora - dataAbertura;
+    
+    const dias = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const horas = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutos = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    
+    let tempoTexto = '';
+    if (dias > 0) {
+        tempoTexto = `${dias} dia(s), ${horas} hora(s)`;
+    } else if (horas > 0) {
+        tempoTexto = `${horas} hora(s), ${minutos} minuto(s)`;
+    } else {
+        tempoTexto = `${minutos} minuto(s)`;
+    }
+    
+    const tempoElement = document.getElementById('tempo-aberto');
+    if (tempoElement) {
+        tempoElement.textContent = tempoTexto;
+    }
+    
+    // Botão para abrir chat
+    const openChatBtn = document.getElementById('open-chat-btn');
+    if (openChatBtn) {
+        openChatBtn.addEventListener('click', openChat);
+    }
+    
+    // Botão para fechar chat
+    const closeChatBtn = document.getElementById('close-chat-btn');
+    if (closeChatBtn) {
+        closeChatBtn.addEventListener('click', closeChat);
+    }
+    
+    // Overlay para fechar chat
+    const chatOverlay = document.getElementById('chat-overlay');
+    if (chatOverlay) {
+        chatOverlay.addEventListener('click', closeChat);
+    }
+    
+    // Form de envio
+    const chatForm = document.getElementById('chat-form');
+    if (chatForm) {
+        chatForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const input = document.getElementById('message-input');
+            const text = input.value.trim();
+            
+            if (text) {
+                sendMessage(text);
+            }
+        });
+    }
+    
+    // Indicador de digitação
+    const messageInput = document.getElementById('message-input');
+    if (messageInput) {
+        messageInput.addEventListener('input', function() {
+            if (!isTyping) {
+                isTyping = true;
+                const typingIndicator = document.getElementById('typing-indicator');
+                if (typingIndicator) {
+                    typingIndicator.style.display = 'block';
+                }
+            }
+            
+            clearTimeout(typingTimeout);
+            typingTimeout = setTimeout(() => {
+                isTyping = false;
+                const typingIndicator = document.getElementById('typing-indicator');
+                if (typingIndicator) {
+                    typingIndicator.style.display = 'none';
+                }
+            }, 1000);
+        });
+        
+        // Enviar com Enter
+        messageInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                const text = this.value.trim();
+                if (text) {
+                    sendMessage(text);
+                }
+            }
+        });
+    }
+    
+    // Verificar novas mensagens a cada 3 segundos (apenas se chat estiver aberto)
+    setInterval(() => {
+        if (document.getElementById('chat-sidebar').classList.contains('open')) {
+            checkNewMessages();
+        }
+    }, 3000);
+});
+
+// Fechar chat com ESC
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeChat();
+    }
+});
+</script>
+{% endblock %}
+
+{% block styles %}
+<style>
+/* Layout com chat como coluna à direita */
+body.chat-open {
+    overflow: hidden;
+}
+
+.main-content {
+    transition: all 0.3s ease;
+}
+
+.main-content.chat-open {
+    width: 75% !important;
+    float: left;
+    position: relative;
+    overflow-y: auto;
+    height: 100vh;
+}
+
+.sidebar-content {
+    transition: all 0.3s ease;
+}
+
+.sidebar-content.chat-open {
+    width: 25% !important;
+    float: left;
+    position: relative;
+}
+
+/* Chat como coluna à direita */
+.chat-sidebar {
+    position: fixed;
+    top: 0;
+    right: -25%;
+    width: 25%;
+    height: 100vh;
+    background: #fff;
+    box-shadow: -2px 0 10px rgba(0,0,0,0.1);
+    z-index: 1050;
+    transition: right 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    border-left: 1px solid #e9ecef;
+}
+
+.chat-sidebar.open {
+    right: 0;
+}
+
+.chat-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.1);
+    z-index: 1040;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+}
+
+.chat-overlay.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+.chat-header {
+    background: linear-gradient(135deg, #007bff, #0056b3);
+    color: white;
+    padding: 1rem;
+    border-bottom: 1px solid #e9ecef;
+    flex-shrink: 0;
+}
+
+.chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem;
+    background: #f8f9fa;
+}
+
+.message {
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: flex-end;
+}
+
+.message.sent {
+    justify-content: flex-end;
+}
+
+.message.received {
+    justify-content: flex-start;
+}
+
+.message-bubble {
+    max-width: 90%;
+    padding: 0.5rem 0.75rem;
+    border-radius: 15px;
+    position: relative;
+    word-wrap: break-word;
+    font-size: 0.9rem;
+}
+
+.message.sent .message-bubble {
+    background: linear-gradient(135deg, #007bff, #0056b3);
+    color: white;
+    border-bottom-right-radius: 4px;
+}
+
+.message.received .message-bubble {
+    background: white;
+    color: #333;
+    border: 1px solid #e9ecef;
+    border-bottom-left-radius: 4px;
+}
+
+.message-info {
+    font-size: 0.75rem;
+    margin-top: 0.25rem;
+    opacity: 0.7;
+}
+
+.message.sent .message-info {
+    text-align: right;
+    color: #6c757d;
+}
+
+.message.received .message-info {
+    text-align: left;
+    color: #6c757d;
+}
+
+.chat-input-area {
+    padding: 1rem;
+    background: white;
+    border-top: 1px solid #e9ecef;
+    flex-shrink: 0;
+}
+
+#message-input {
+    border-radius: 20px;
+    border: 2px solid #e9ecef;
+    padding: 0.5rem 0.75rem;
+    transition: border-color 0.3s ease;
+    font-size: 0.9rem;
+}
+
+#message-input:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+#send-button {
+    border-radius: 50%;
+    width: 35px;
+    height: 35px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s ease;
+    font-size: 0.8rem;
+}
+
+#send-button:hover {
+    transform: scale(1.05);
+}
+
+.user-avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.6rem;
+    font-weight: bold;
+    margin: 0 0.2rem;
+}
+
+.message.sent .user-avatar {
+    background: #28a745;
+    color: white;
+}
+
+.message.received .user-avatar {
+    background: #6c757d;
+    color: white;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+    .main-content.chat-open {
+        width: 100% !important;
+        float: none;
+    }
+    
+    .sidebar-content.chat-open {
+        width: 100% !important;
+        float: none;
+    }
+    
+    .chat-sidebar {
+        width: 100%;
+        right: -100%;
+    }
+}
+
+/* Scrollbar personalizada */
+.chat-messages::-webkit-scrollbar {
+    width: 4px;
+}
+
+.chat-messages::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 2px;
+}
+
+.chat-messages::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 2px;
+}
+
+.chat-messages::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row main-content">
+    <div class="col-md-8">
+        <!-- Detalhes do Chamado -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h4 class="card-title mb-0">
+                        <i class="fas fa-ticket-alt me-2"></i>Chamado #{{ chamado.id }}
+                    </h4>
+                    <div>
+                        {% if chamado.status == 'aberto' %}
+                            <span class="badge bg-warning fs-6">Aberto</span>
+                        {% elif chamado.status == 'em_andamento' %}
+                            <span class="badge bg-info fs-6">Em Andamento</span>
+                        {% elif chamado.status == 'resolvido' %}
+                            <span class="badge bg-success fs-6">Resolvido</span>
+                        {% elif chamado.status == 'fechado' %}
+                            <span class="badge bg-secondary fs-6">Fechado</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <h5 class="card-title">{{ chamado.titulo }}</h5>
+                <p class="card-text">{{ chamado.descricao }}</p>
+                
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <small class="text-muted">Categoria:</small><br>
+                        <span class="badge bg-secondary">{{ chamado.categoria }}</span>
+                    </div>
+                    <div class="col-md-6">
+                        <small class="text-muted">Prioridade:</small><br>
+                        {% if chamado.prioridade == 'baixa' %}
+                            <span class="badge bg-success">Baixa</span>
+                        {% elif chamado.prioridade == 'media' %}
+                            <span class="badge bg-warning">Média</span>
+                        {% elif chamado.prioridade == 'alta' %}
+                            <span class="badge bg-danger">Alta</span>
+                        {% elif chamado.prioridade == 'critica' %}
+                            <span class="badge bg-dark">Crítica</span>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <small class="text-muted">Solicitante:</small><br>
+                        <strong>{{ chamado.solicitante.nome }}</strong><br>
+                        <small class="text-muted">{{ chamado.solicitante.email }}</small>
+                    </div>
+                    <div class="col-md-6">
+                        <small class="text-muted">Data de Abertura:</small><br>
+                        <strong>{{ chamado.data_abertura.strftime('%d/%m/%Y às %H:%M') }}</strong>
+                    </div>
+                </div>
+                
+                {% if chamado.tecnico %}
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <small class="text-muted">Técnico Responsável:</small><br>
+                        <strong>{{ chamado.tecnico.nome }}</strong><br>
+                        <small class="text-muted">{{ chamado.tecnico.email }}</small>
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if chamado.data_fechamento %}
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <small class="text-muted">Data de Fechamento:</small><br>
+                        <strong>{{ chamado.data_fechamento.strftime('%d/%m/%Y às %H:%M') }}</strong>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Comentários -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-comments me-2"></i>Comentários
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if comentarios %}
+                    {% for comentario in comentarios %}
+                    <div class="border-bottom pb-3 mb-3">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <strong>{{ comentario.usuario.nome }}</strong>
+                                <small class="text-muted">({{ comentario.usuario.nivel|title }})</small>
+                            </div>
+                            <small class="text-muted">{{ comentario.data_criacao.strftime('%d/%m/%Y às %H:%M') }}</small>
+                        </div>
+                        <p class="mt-2 mb-0">{{ comentario.texto }}</p>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted">Nenhum comentário ainda.</p>
+                {% endif %}
+                
+                <!-- Formulário para novo comentário -->
+                <form method="POST" action="{{ url_for('comentar_chamado', chamado_id=chamado.id) }}" class="mt-4">
+                    <div class="mb-3">
+                        <label for="comentario" class="form-label">Adicionar Comentário</label>
+                        <textarea class="form-control" id="comentario" name="comentario" rows="3" 
+                                  placeholder="Digite seu comentário..." required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-paper-plane me-2"></i>Enviar Comentário
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 sidebar-content">
+        <!-- Ações -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-cogs me-2"></i>Ações
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if usuario.nivel in ['gestor', 'tecnico'] %}
+                <form method="POST" action="{{ url_for('atualizar_status_chamado', chamado_id=chamado.id) }}" class="mb-3">
+                    <div class="mb-3">
+                        <label for="status" class="form-label">Atualizar Status</label>
+                        <select class="form-select" id="status" name="status" required>
+                            <option value="aberto" {% if chamado.status == 'aberto' %}selected{% endif %}>Aberto</option>
+                            <option value="em_andamento" {% if chamado.status == 'em_andamento' %}selected{% endif %}>Em Andamento</option>
+                            <option value="resolvido" {% if chamado.status == 'resolvido' %}selected{% endif %}>Resolvido</option>
+                            <option value="fechado" {% if chamado.status == 'fechado' %}selected{% endif %}>Fechado</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-warning w-100">
+                        <i class="fas fa-save me-2"></i>Atualizar Status
+                    </button>
+                </form>
+                {% endif %}
+                
+                {% if usuario.nivel == 'gestor' and not chamado.tecnico %}
+                <form method="POST" action="{{ url_for('atribuir_tecnico', chamado_id=chamado.id) }}">
+                    <div class="mb-3">
+                        <label for="tecnico_id" class="form-label">Atribuir Técnico</label>
+                        <select class="form-select" id="tecnico_id" name="tecnico_id" required>
+                            <option value="">Selecione um técnico...</option>
+                            {% for tecnico in tecnicos %}
+                            <option value="{{ tecnico.id }}">{{ tecnico.nome }} ({{ tecnico.departamento }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-info w-100">
+                        <i class="fas fa-user-plus me-2"></i>Atribuir Técnico
+                    </button>
+                </form>
+                {% endif %}
+                
+                <hr>
+                
+                        {% if chamado.status == 'em_andamento' and (usuario.id == chamado.solicitante_id or usuario.id == chamado.tecnico_id) %}
+        <a href="{{ url_for('chat', chamado_id=chamado.id) }}" class="btn btn-success w-100 mb-2">
+            <i class="fas fa-comments me-2"></i>Abrir Chat
+        </a>
+        {% endif %}
+                
+                <a href="{{ url_for('dashboard') }}" class="btn btn-secondary w-100">
+                    <i class="fas fa-arrow-left me-2"></i>Voltar ao Dashboard
+                </a>
+            </div>
+        </div>
+        
+        <!-- Informações Adicionais -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-info-circle me-2"></i>Informações
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <small class="text-muted">ID do Chamado:</small><br>
+                    <strong>#{{ chamado.id }}</strong>
+                </div>
+                
+                <div class="mb-3">
+                    <small class="text-muted">Departamento:</small><br>
+                    <strong>{{ chamado.solicitante.departamento }}</strong>
+                </div>
+                
+                <div class="mb-3">
+                    <small class="text-muted">Tempo Aberto:</small><br>
+                    <strong id="tempo-aberto">Calculando...</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+{% endblock %}
+
+ 
